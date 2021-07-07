@@ -20,13 +20,8 @@ define('__TYPECHO_THEME_DIR__', '/usr/themes');
 /** 后台路径(相对路径) */
 define('__TYPECHO_ADMIN_DIR__', '/admin/');
 
-/** 设置包含路径 */
-@set_include_path(get_include_path() . PATH_SEPARATOR .
-__TYPECHO_ROOT_DIR__ . '/var' . PATH_SEPARATOR .
-__TYPECHO_ROOT_DIR__ . __TYPECHO_PLUGIN_DIR__);
-
 /** 载入API支持 */
-require_once 'Typecho/Common.php';
+require_once __TYPECHO_ROOT_DIR__ . '/var/Typecho/Common.php';
 
 /** 程序初始化 */
 Typecho_Common::init();
@@ -537,7 +532,7 @@ Typecho_Cookie::set('__typecho_lang', $lang);
                                     }
 
                                     /** 初始化配置文件 */
-                                    $lines = array_slice(file(__FILE__), 1, 31);
+                                    $lines = array_slice(file(__FILE__), 1, 26);
                                     $lines[] = "
 /** 定义数据库参数 */
 \$db = new Typecho_Db('{$adapter}', '" . _r('dbPrefix') . "');
@@ -554,7 +549,7 @@ Typecho_Db::set(\$db);
 <div class="message notice"><p><?php _e('安装程序无法自动创建 <strong>config.inc.php</strong> 文件'); ?><br />
 <?php _e('您可以在网站根目录下手动创建 <strong>config.inc.php</strong> 文件, 并复制如下代码至其中'); ?></p>
 <p><textarea rows="5" onmouseover="this.select();" class="w-100 mono" readonly><?php echo htmlspecialchars($contents); ?></textarea></p>
-<p><button name="created" value="1" type="submit" class="btn primary">创建完毕, 继续安装 &raquo;</button></p></div>
+<p><button name="created" value="1" type="submit" class="btn primary"><?php _e('创建完毕, 继续安装 &raquo;'); ?></button></p></div>
                                     <?php
                                     } else {
                                         header('Location: ./install.php?start');
