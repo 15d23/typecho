@@ -10,7 +10,8 @@
                 }
             })
         },
-        uploadComplete      :   function (file) {}
+        uploadComplete      :   function (attachment) {},
+        savePost            :   function (cb) {},
     };
 })(window);
 
@@ -21,6 +22,7 @@ function scrollableEditor(el, preview) {
         lastFocus = null,
         merge = [],
         rows = [],
+        duration = 500,
         previewRows = [],
         css = {display: 'block', 'position': 'absolute', 'left': '-99999px', 'top': '-99999px'},
         test = $('<div></div>').appendTo(document.body),
@@ -52,6 +54,41 @@ function scrollableEditor(el, preview) {
 
         test.html('');
         reloadPreview(input);
+    }
+
+    // native scroll
+    var scrollLock = {};
+
+    function requestScrollTop(sel, top) {
+        var el = sel.get(0),
+            id = el.id;
+
+        if (scrollLock[id] == top) {
+            return;
+        }
+        
+        scrollLock[id] = top;
+        var start = performance.now(),
+            startTop = el.scrollTop;
+
+        function scrollStep(time) {
+            if (scrollLock[id] != top) {
+                return;
+            }
+
+            var interval = time - start,
+                currentTop = startTop + (top - startTop) * (interval / duration);
+
+            if (interval < duration) {
+                el.scrollTo({top: currentTop});
+                window.requestAnimationFrame(scrollStep);
+            } else {
+                el.scrollTo({top: top});
+                scrollLock[id] = -1;
+            }
+        }
+
+        window.requestAnimationFrame(scrollStep);
     }
 
     function scroll(inputLine) {
@@ -100,7 +137,7 @@ function scrollableEditor(el, preview) {
                 var nextPos = previewRows[j + 1] ? previewRows[j + 1][2] : preview.get(0).scrollHeight;
                 scrollPos = (i == 0 ? 0 : item[2]) + (nextPos - item[2]) * percent;
 
-                preview.scrollTop(scrollPos);
+                requestScrollTop(preview, scrollPos);
                 break;
             }
         }
@@ -133,7 +170,7 @@ function scrollableEditor(el, preview) {
             nextPos = found ? previewRows[i > 0 ? i : 1][2] : preview.get(0).scrollHeight,
             percent = (previewScrollTop - current[2]) / (nextPos - current[2]);
 
-        el.scrollTop(start + (end - start) * percent + offset);
+        requestScrollTop(el, start + (end - start) * percent + offset);
     }
 
     function reloadPreview(input) {
@@ -212,15 +249,7 @@ function scrollableEditor(el, preview) {
         }
 
         return current;
-    }
-
-    // 检测宽度
-    setInterval(function () {
-        if (el.width() != lastWidth) {
-            lastWidth = el.width();
-            el.trigger('resize');
-        }
-    }, 150);
+    } 
 
     // 检测输入
     el.on('touch keypress click', reloadInput);
@@ -233,13 +262,34 @@ function scrollableEditor(el, preview) {
 
     el.on('resize', reload);
 
+    var lastScroll = {editor: [false, 0, scroll], preview: [false, 0, scrollPreview]}
+
     el.on('DOMMouseScroll mousewheel touchmove', function () {
-        scroll();
+        lastScroll.editor[0] = true;
+        lastScroll.editor[1] = performance.now();
     });
 
     preview.on('DOMMouseScroll mousewheel touchmove', function () {
-        scrollPreview();
+        lastScroll.preview[0] = true;
+        lastScroll.preview[1] = performance.now();
     });
+
+    // 检测宽度
+    setInterval(function () {
+        if (el.width() != lastWidth) {
+            lastWidth = el.width();
+            el.trigger('resize');
+        }
+
+        for (k in lastScroll) {
+            var item = lastScroll[k];
+
+            if (item[0] && performance.now() - item[1] >= 100) {
+                item[0] = false;
+                item[2]();
+            }
+        }
+    }, 50);
 
     return reload;
 }
@@ -328,7 +378,7 @@ function scrollableEditor(el, preview) {
 
     // 表格选择插件
     $.fn.tableSelectable = function (options) {
-        var table = this, s = $.extend({
+        const table = this, s = $.extend({
             checkEl     :   null,
             rowEl       :   null,
             selectAllEl :   null,
@@ -336,19 +386,28 @@ function scrollableEditor(el, preview) {
         }, options);
 
         function clickRow (t) {
-            var t = $(t), check = $(s.checkEl, t), checked = check.prop('checked');
+            const check = $(s.checkEl, t), checked = check.prop('checked');
 
             if (!check.length) {
                 return;
             }
 
             check.prop('checked', !checked);
-            
-            if (checked) {
-                t.removeClass('checked');
-            } else {
-                t.addClass('checked');
+            syncSelectAllState();
+        }
+
+        function syncSelectAllState () {
+            const selectAll = $(s.selectAllEl),
+                checks = $(s.checkEl, $(s.rowEl, table)),
+                checkedCount = checks.filter(':checked').length,
+                totalCount = checks.length;
+
+            if (!selectAll.length) {
+                return;
             }
+
+            selectAll.prop('checked', totalCount > 0 && checkedCount === totalCount);
+            selectAll.prop('indeterminate', checkedCount > 0 && checkedCount < totalCount);
         }
 
         $(s.rowEl, this).each(function () {
@@ -356,9 +415,9 @@ function scrollableEditor(el, preview) {
                 clickRow($(this).parents(s.rowEl));
             });
         }).click(function (e) {
-            var target = $(e.toElement ? e.toElement : e.target),
+            const target = $(e.toElement ? e.toElement : e.target),
                 tagName = target.prop('tagName').toLowerCase();
-            
+
             if ($.inArray(tagName, ['input', 'textarea', 'a', 'button', 'i']) >= 0
                 && 'checkbox' != target.attr('type')) {
                 e.stopPropagation();
@@ -368,27 +427,17 @@ function scrollableEditor(el, preview) {
         });
 
         $(s.selectAllEl).click(function () {
-            var t = $(this), checked = t.prop('checked');
-            
-            if (checked) {
-                $(s.rowEl, table).each(function () {
-                    var t = $(this), el = $(s.checkEl, this).prop('checked', true);
-                    if (el.length > 0) {
-                        t.addClass('checked');
-                    }
-                });
-            } else {
-                $(s.rowEl, table).each(function () {
-                    var t = $(this), el = $(s.checkEl, this).prop('checked', false);
-                    if (el.length > 0) {
-                        t.removeClass('checked');
-                    }
-                });
-            }
+            const t = $(this), checked = t.prop('checked');
+
+            $(s.rowEl, table).each(function () {
+                $(s.checkEl, this).prop('checked', !!checked);
+            });
+
+            syncSelectAllState();
         });
 
         $(s.actionEl).click(function () {
-            var t = $(this), lang = t.attr('lang');
+            const t = $(this), lang = t.attr('lang');
 
             if (!lang || confirm(lang)) {
                 table.parents('form').attr('action', t.attr('href')).submit();
@@ -396,6 +445,8 @@ function scrollableEditor(el, preview) {
 
             return false;
         });
+
+        syncSelectAllState();
     };
 })($);
 
@@ -493,7 +544,7 @@ jQuery.tableDnD = {
             if (0 == $('tfoot', this).length
                 && 0 < $('thead', this).length) {
                 var h = $('thead', this), count = $('th', h).length,
-                    f = $('<tfoot><tr><td style="padding:0;height:0;line-height:0;border:none" colspan="' + count 
+                    f = $('<tfoot class="kit-hidden-mb"><tr><td style="padding:0;height:0;line-height:0;border:none" colspan="' + count
                     + '"></td></tr></tfoot>').insertAfter(h),
                     l = $('tr:last', this);
 

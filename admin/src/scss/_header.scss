@@ -1,109 +1,243 @@
 /**
 * 后台头部导航
 */
+
+$border-nav: 1px solid #383D45;
+$color-nav-bg: #292D33;
+$color-nav-text-normal: #BBB;
+$color-nav-text-mute: #777;
+$color-nav-text-hover: #FFF;
+$color-nav-btn-hover: #202328;
+$color-nav-child-focus: #6DA1BB;
+
 .typecho-head-nav {
   padding: 0 10px;
-  background: #292D33;
-}
+  background: $color-nav-bg;
+  position: sticky;
+  top: 0;
+  display: flex;
+  z-index: 100;
 
-.typecho-head-nav a {
-  color: #BBB;
-}
-.typecho-head-nav a:hover,
-.typecho-head-nav a:focus {
-  color: #FFF;
-  text-decoration: none;
-}
+  a, .menu-bar summary {
+    padding: 0 20px;
+    height: 36px;
+    line-height: 36px;
+    color: $color-nav-text-normal;
 
-#typecho-nav-list {
-  float: left;
-  ul {
-    list-style: none;
+    &:focus,
+    &:hover {
+      color: $color-nav-text-hover;
+      text-decoration: none;
+    }
+  }
+
+  .menu-bar {
+    display: none;
+  }
+
+  menu {
     margin: 0;
     padding: 0;
+    list-style: none;
+    background: $color-nav-bg;
+  }
+
+  nav {
+    width: 100%;
+
+    & > menu {
+      display: flex;
+      position: relative;
+      width: 100%;
+
+      & > li {
+
+        &:first-child {
+          border-left: $border-nav;
+        }
+
+        > a {
+          display: block;
+          border-right: $border-nav;
+
+          &:hover, &:focus {
+            background: $color-nav-btn-hover;
+
+            & + menu {
+              display: flex;
+            }
+          }
+        }
+
+        &:not(.operate) {
+          &.focus > a {
+            background: $color-nav-btn-hover;
+            font-weight: bold;
+          }
+
+          &:hover > a {
+            background: $color-nav-btn-hover;
+          }
+        }
+
+        &:hover, &:focus-within, &:focus {
+          menu {
+            display: flex;
+          }
+        }
+
+        menu {
+          position: absolute;
+          top: 36px;
+          display: none;
+          flex-flow: column;
+          min-width: 160px;
+          max-width: 240px;
+          background: $color-nav-btn-hover;
+          z-index: 250;
+
+          & > li {
+            a {
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+              display: block;
+
+              &:hover,
+              &:focus {
+                background: $color-nav-bg;
+              }
+            }
+
+            &.focus a {
+              color: $color-nav-child-focus;
+              font-weight: bold;
+            }
+          }
+        }
+
+        &.operate {
+          flex: 1;
+          display: flex;
+          justify-content: flex-end;
+
+          a {
+            &:hover {
+              background-color: $color-nav-btn-hover;
+            }
+
+            &:first-child {
+              border-left: $border-nav;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  @include screen(phone, max) {
+    padding: 0;
+    flex-flow: column;
+
+    .menu-bar {
+      display: block;
+      font-size: 14px;
+      position: sticky;
+      top: 0;
+      background: $color-nav-bg;
+      z-index: 10;
+
+      summary {
+        cursor: pointer;
+      }
+
+      &[open] {
+        summary {
+          border-bottom: $border-nav;
+        }
+
+        & ~ menu {
+          display: flex;
+        }
+      }
+    }
+
+    nav {
+      overflow-y: auto;
+      width: 100vw;
+      position: fixed;
+      top: 0;
+      background: $color-nav-btn-hover;
+
+      &:has(.menu-bar[open]) {
+        width: 70vw;
+        height: 100%;
+      }
+
+      & > menu {
+        display: none;
+        flex-flow: column;
+
+        & > li {
+          &:first-child {
+            border: none;
+          }
+
+          > a {
+            border: none !important;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+
+          &:not(.operate) {
+            &.focus > a {
+              background: $color-nav-bg;
+            }
+
+            &:hover > a {
+              background: $color-nav-bg;
+            }
+
+            & > a {
+              pointer-events: auto;
+              cursor: pointer;
+            }
+          }
+
+          menu {
+            position: static;
+            border: $border-nav;
+            border-width: 1px 0;
+            display: flex;
+            min-width: auto;
+            max-width: none;
+          }
+
+          &.operate {
+            flex-flow: column;
+            justify-content: flex-start;
+
+            a {
+              background: $color-nav-btn-hover;
+
+              &:hover {
+                background: $color-nav-bg;
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }
 
-#typecho-nav-list ul:first-child {
-  border-left: 1px solid #383D45;
-}
+@include screen(phone, max) {
+  body {
+    padding-top: 36px;
 
-#typecho-nav-list .root {
-  position: relative;
-  float: left;
-}
-
-#typecho-nav-list .parent a {
-  display: block;
-  float: left;
-  padding: 0 20px;
-  border-right: 1px solid #383D45;
-  height: 36px;
-  line-height: 36px;
-  color: #BBB;
-}
-
-#typecho-nav-list .parent a:hover,
-#typecho-nav-list .focus .parent a,
-#typecho-nav-list .root:hover .parent a {
-  background: #202328;
-  color: #FFF;
-  text-decoration: none;
-}
-
-#typecho-nav-list .focus .parent a {
-  font-weight: bold;
-}
-
-#typecho-nav-list .child {
-  position: absolute;
-  top: 36px;
-  display: none;
-  margin: 0;
-  min-width: 160px; 
-  max-width: 240px;
-  background: #202328;
-  z-index: 250;
-}
-
-#typecho-nav-list .root:hover .child {
-  display: block;
-}
-
-#typecho-nav-list .child li a {
-  color: #BBB;
-  display: block;
-  padding: 0 20px;
-  overflow: hidden;
-  text-overflow : ellipsis;
-  white-space: nowrap;
-  height: 36px;
-  line-height: 36px;
-}
-
-#typecho-nav-list .child li a:hover,
-#typecho-nav-list .child li a:focus {
-  background: #292D33;
-  color: #FFF;
-}
-#typecho-nav-list .child li.focus a {
-  color: #6DA1BB;
-  font-weight: bold;
-}
-
-.typecho-head-nav .operate {
-  float: right;
-}
-.typecho-head-nav .operate a {
-  display: inline-block;
-  margin-left: -1px;
-  padding: 0 20px;
-  border: 1px solid #383D45;
-  border-width: 0 1px;
-  line-height: 36px;
-  color: #BBB;
-}
-.typecho-head-nav .operate a:hover {
-  background-color: #202328;
-  color: #FFF;
+    &:has(.menu-bar[open]) {
+      overflow: hidden;
+    }
+  }
 }
